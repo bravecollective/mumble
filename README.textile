@@ -1,0 +1,84 @@
+h1(#title). Brave Collective Mumble Management Application
+
+bq(subtitle). An authenticated Mumble management application and authorization plug-in.
+
+bq(byline). (C) 2013, Alice Bevan-McGregor and contributors.
+
+bq(byline). "https://github.com/bravecollective/core":github-project
+
+[github-project]https://github.com/bravecollective/core
+
+!https://travis-ci.org/bravecollective/core.png?branch=master!:https://travis-ci.org/bravecollective/core
+
+
+h2(#what-is). %1.% What is 
+
+YES THIS NEEDS T.B.D.
+
+
+h2(#installation). %2.% Installation
+
+Development takes place on "GitHub":github in the "core":github-project project.  Issue tracking, documentation, and downloads are provided there.
+
+You will require an installed and running "MongoDB":mongodb installation.  Installation and configuration of MongoDB is beyond the scope of this documentation.
+
+You will require a current "WebCore":http://www.web-core.org/ installation.  The following will create a new Python virtual environment folder called "brave" in your current working directory, then activate the virtual environment.
+
+<pre><code>curl get.web-core.org | python - brave
+cd brave
+. bin/activate</code></pre>
+
+Additionally, there are two requirements you will need to manually install as Core Services require features present in as-yet unreleased packages.  You will need to perform the following steps:
+
+<pre><code>(git clone git@github.com:marrow/marrow.templating.git; cd marrow.templating; python setup.py develop)
+(git clone git@github.com:marrow/marrow.tags.git; cd marrow.tags; python setup.py develop)</code></pre>
+
+Installing the current development version requires "Git":git, a distributed source code management system.  Compilation additionally requires the Python development headers and the OpenSSL development headers.  In Debian/Ubuntu, these are found in packages `python-dev` and `libssl-dev`.
+Run the following to download the development version with Git, and _link_ it into your Python runtime:
+
+<pre><code>git clone https://github.com/bravecollective/core.git
+(cd core; python setup.py develop)</code></pre>
+
+Once you have successfully compiled the Core Service, copy `core/development.ini` to `core/local.ini`, and make changes as appropriate.  Finally, bootstrap the EVE API system by running:
+
+<pre><code>paster shell local.ini # or development.ini if you didn't customize
+from brave.core.util.eve import populate_calls
+populate_calls()</code></pre>
+
+You can upgrade to the latest version at any time:
+
+<pre><code>(cd core; git pull; python setup.py develop)</code></pre>
+
+If you would like to make changes and contribute them back to the project, fork the GitHub project, make your changes, and submit a pull request.  This process is beyond the scope of this documentation; for more information, see "GitHub's documentation":github-help.
+
+
+[github]https://github.com/
+[git]http://git-scm.com/
+[github-help]http://help.github.com/
+[mongodb]http://www.mongodb.org/
+
+
+h2(#running). %3.% Running the Service
+
+Make a copy of @development.ini@ called @local.ini@, update all relevant directives (related to storage of sessions, cache data, and database URI) and run the following to serve content locally:
+
+<pre><code>paster serve local.ini</code></pre>
+
+This will start a development server and present the URL you need to access.  (Generally "http://127.0.0.1:8080":http://127.0.0.1:8080.)  If you wish the server to automatically restart in the event of a change to one of the source files (templates and statically served content are exempt) add the @--reload@ switch.
+
+
+
+h2(#license). %4.% License
+
+Brave Collective Core Services has been released under the MIT Open Source license.  All contributors agree to transfer ownership of their code to Alice Bevan-McGregor for release under this license.  (This is to mitigate issues in the future.)
+
+
+h3(#license-mit). %4.1.% The MIT License
+
+Copyright (C) 2013 Alice Bevan-McGregor and contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

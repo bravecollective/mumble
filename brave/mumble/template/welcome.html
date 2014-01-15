@@ -1,0 +1,22 @@
+## encoding: utf-8
+
+<%inherit file="brave.mumble.template.master"/>
+<%namespace name="f" file="brave.mumble.template.filter"/>
+
+<%block name="title">Welcome</%block>
+
+<%block name="header">${parent.header()}</%block>
+
+<div class="page-header">
+    <h1>Welcome <small>to the Brave Collective Mumble management application.</small></h1>
+</div>
+
+<div class="jumbotron">
+    <blockquote>
+        <h2>Because over there,<br>as they sometimes do, things went<br>a little crazy.</h2>
+        <small>From <cite title="Times Haiku"><a href="http://haiku.nytimes.com/post/72917689620/because-over-there-as-they-sometimes-do-things-w">Times Haiku</a></cite></small>
+    </blockquote>
+    <p class="actions">
+        Please <a class="btn btn-primary btn-lg" href="/authorize" style="margin: 0 5px; line-height: 1.2; vertical-align: baseline;"><i class="fa fa-sign-in fa-lg"></i> Authenticate</a> to create or manage your account.
+    </p>
+</div>

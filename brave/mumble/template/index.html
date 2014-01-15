@@ -1,0 +1,115 @@
+## encoding: utf-8
+
+<%inherit file="brave.mumble.template.master"/>
+<%namespace name="f" file="brave.mumble.template.filter"/>
+
+<%block name="title">Account Management</%block>
+
+<div class="page-header">
+    <h1>Account Management <small>Hope you like passwords.</small></h1>
+</div>
+
+<div class="jumbotron">
+    <p>
+        If this is your first time here, you’ll need to enter a password below before accessing Mumble.
+    </p>
+    <p>
+        If you are returning, you can use the password field below to change your password.
+    </p>
+</div>
+
+
+<%def name="panel(title, cls=None)">
+<div class="panel panel-default${(' ' + cls) if cls else ''}">
+    <div class="panel-heading">
+        <h3 class="panel-title">${title}</h3>
+    </div>
+    <div class="panel-body">
+        ${caller.body()}
+    </div>
+</div>
+</%def>
+
+
+<div class="row">
+    <div class="col-md-6">
+        <%self:panel title="Mumble User Name" cls="user">
+            <input type="text" class="form-control input-lg" disabled value="${web.user.character.name.replace(' ', '_')}" style="color: black; background-color: white; font-family: Courier, 'Courier New', fixed;">
+        </%self:panel>
+    </div>
+    
+    <div class="col-md-6">
+        <%self:panel title="Update Password" cls="passwd">
+            <label class="sr-only" for="password">Password</label>
+            <div class="input-group">
+                <input type="password" class="form-control input-lg" id="password" placeholder="Enter new password here.">
+                <span class="input-group-addon">
+                    <i class="fa fa-fw fa-2x fa-times-circle-o${' hidden' if web.user.has_password else ''} incomplete text-danger"></i>
+                    <i class="fa fa-fw fa-2x fa-circle-o hidden" data-score="0"></i>
+                    <i class="fa fa-fw fa-2x fa-circle-o text-danger hidden" data-score="1"></i>
+                    <i class="fa fa-fw fa-2x fa-circle-o text-warning hidden" data-score="2"></i>
+                    <i class="fa fa-fw fa-2x fa-circle-o text-info hidden" data-score="3"></i>
+                    <i class="fa fa-fw fa-2x fa-circle-o text-success hidden" data-score="4"></i>
+                    <i class="fa fa-fw fa-2x fa-cog fa-spin hidden trying"></i>
+                    <i class="fa fa-fw fa-2x fa-check-circle-o${' hidden' if not web.user.has_password else ''} success text-success"></i>
+                </span>
+            </div>
+        </%self:panel>
+    </div>
+</div>
+
+<%self:panel title="Connecting to Mumble">
+    <p>Some day there will be a guide here describing how you, too, can participate in the joy and wonder of this thing called Mumble!  But today is not that day.</p>
+</%self:panel>
+
+
+<%block name="post">
+    ${parent.post()}
+    <script src="/js/zxcvbn-async.js"></script>
+    
+    <script>
+        $(function(){
+            $('#password').on('keyup', function(e){
+                if (e.keyCode == 13) {
+                    if ( $('i.fa.incomplete.hidden, i.fa.success.hidden, i.fa[data-score=0].hidden').length != 3 ) {
+                        $('.passwd .input-group-addon i.fa').animate({
+                                opacity: .33
+                            }, 125, function() {
+                                $('.passwd .input-group-addon i.fa').animate({
+                                        opacity: 1
+                                    }, 125);
+                            });
+                        return;
+                    }
+                    
+                    $('i.fa[data-score]').addClass('hidden');
+                    $('i.fa.trying').removeClass('hidden');
+                    
+                    var password = $('#password').blur().prop('disabled', true).val();
+                    
+                    $.post('/passwd', {password: password}, function(result) {
+                            if ( result.success ) {
+                                // Successful
+                                
+                                $('i.fa.trying, i.fa.success').toggleClass('hidden');
+                                $('#password').val('').attr('placeholder', "Password updated.").prop('disabled', false).focus();
+                                
+                                return;
+                            }
+                            
+                            $('i.fa.trying, i.fa.incomplete').toggleClass('hidden');
+                            $('#password').val('').attr('placeholder', result.message).prop('disabled', false).focus();
+                        });
+                    
+                    return;
+                }
+                
+                // TODO: Exclude the character's name.
+                var analysis = zxcvbn($('#password').val(), []);
+                
+                $('i.fa.incomplete, i.fa.success, i.fa[data-score]').addClass('hidden');
+                $('i.fa[data-score=' + analysis.score + ']').removeClass('hidden');
+            });
+        });
+    </script>
+</%block>
