@@ -84,7 +84,8 @@ class Ticket(Document):
     password = PasswordField(db_field='pw', difficulty=0.25)
     
     expires = DateTimeField(db_field='e')
-    seen = DateTimeField(db_field='s')
+    seen = DateTimeField(db_field='s')  # TODO: Update this when the user connects/disconnects.
+    registered = DateTimeField(db_field='r')
     
     @property
     def has_password(self):
