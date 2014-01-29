@@ -1,15 +1,18 @@
 # encoding: utf-8
 
-from __future__ import unicode_literals
+# from __future__ import unicode_literals
 
 import sys
 import time
 import datetime
+import tempfile
 import Ice
+import IcePy
+from threading import Timer
 
 from brave.mumble.auth.model import Ticket
 
-Ice.loadSlice('', ['-I' + Ice.getSliceDir(), 'Murmur.ice'])
+Ice.loadSlice(b'', [b'-I' + (Ice.getSliceDir() or b'/usr/local/share/Ice-3.5/slice/'), b'Murmur.ice'])
 import Murmur
 
 
@@ -29,8 +32,9 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
     
     # TODO: Factor out all the "registered__exists=True, registered__not=None" clones.
     
-    def __init__(self, server, adapter):
+    def __init__(self, server, meta):
         self.server = server  # TODO: No super()?!
+        self.meta = meta
     
     def authenticate(self, name, pw, certlist, certhash, strong, current=None):
         """Authenticate a Mumble user.
@@ -130,17 +134,243 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
         return dict(results)
 
 
-def main():
+
+
+
+
+
+
+
+
+def checkSecret(fn):
+    def inner(self, *args, **kw):
+        if not self.__secret:
+            return fn(self, *args, **kw)
+        
+        current = kw.get('current', args[-1])
+        
+        if not current or current.ctx.get('secret', None) != self.__secret:
+            log.error("Server transmitted invalid secret.")
+            raise Murmur.InvalidSecretException()
+        
+        return fn(self, *args, **kw)
+    
+    return inner
+
+
+def errorRecovery(value=None, exceptions=(Ice.Exception, )):
+    def decorator(fn):
+        def inner(*args, **kw):
+            try:
+                return func(self, *args, **kw)
+            except exceptions, e:
+                raise
+            except:
+                log.exception("Unhandled error.")
+                return value
+        
+        return inner
+    
+    return decorator
+                
+
+
+class MumbleMetaCallback(Murmur.MetaCallback):
+    def __init__(self, app):
+        Murmur.MetaCallback.__init__(self)
+        self.app = app
+    
+    @errorRecovery()
+    @checkSecret
+    def started(self, server, current=None):
+        """Attach an authenticator to any newly started virtual servers."""
+        log.info("Attaching authenticator to virtual server %d.", server.id())
+        
+        try:
+            server.setAuthenticator(self.app.auth)
+        except (Murmur.InvalidSecretException, Ice.UnknownUserException) as e:
+            if getattr(e, 'unknown', None) != 'Murmur::InvalidSecretException':
+                raise
+            
+            log.error("Invalid Ice secret.")
+            return
+    
+    @errorRecovery()
+    @checkSecret
+    def stopped(self, server, current=None):
+        if not self.app.connected:
+            return
+        
+        try:
+            log.info("Virtual server %d has stopped.", server.id())
+        except Ice.ConnectionRefusedException:
+            self.app.connected = False
+
+
+class MumbleAuthenticatorApp(Ice.Application):
+    def __init__(self, host='127.0.0.1', port=6502, secret=None, *args, **kw):
+        super(MumbleAuthenticatorApp, self).__init__(*args, **kw)
+        
+        self.__host = host
+        self.__port = port
+        self.__secret = secret
+        
+        self.connected = False
+        self.meta = None
+        self.metacb = None
+        self.auth = None
+    
+    def run(self):
+        self.shutdownOnInterrupt()
+        
+        if not self.initializeIceConnection():
+            return 1
+        
+        self.communicator().waitForShutdown()
+        self.watchdog.cancel()
+        
+        if self.interrupted():
+            log.warning("Caught interrupt; shutting down.")
+        
+        return 0
+    
+    def initializeIceConnection(self):
+        ice = self.communicator()
+        
+        if self.__secret:
+            ice.getImplicitContext().put("secret", self.__secret)
+        else:
+            log.warning("No secret defined; consider adding one.")
+        
+        log.info("Connecting to Ice server: %s:%d", self.__host, self.__port)
+        
+        base = ice.stringToProxy('Meta:tcp -h {0} -p {1}'.format(self.__host, self.__port))
+        self.meta = Murmur.MetaPrx.uncheckedCast(base)
+        
+        adapter = ice.createObjectAdapterWithEndpoints('Callback.Client', 'tcp -h {0}'.format(self.__host))
+        adapter.activate()
+        
+        metacbprx = adapter.addWithUUID(MumbleMetaCallback(self))
+        self.metacb = Murmur.MetaCallbackPrx.uncheckedCast(metacbprx)
+        
+        authprx = adapter.addWithUUID(MumbleAuthenticator())
+        self.auth = Murmur.ServerUpdatingAuthenticatorPrx.uncheckedCast(authprx)
+        
+        return self.attachCallbacks()
+    
+    def attachCallbacks(self, quiet=False):
+        try:
+            log.info("Attaching to live servers.")
+            
+            self.meta.addCallback(self.metacb)
+            
+            for server in self.meta.getBootedServers():
+                log.debug("Attaching to virtual server %d.", server.id())
+                server.setAuthenticator(self.auth)
+        
+        except Ice.ConnectionRefusedException:
+            log.error("Server refused connection.")
+            self.connected = False
+            return False
+        
+        except (Murmur.InvalidSecretException, Ice.UnknownUserException) as e:
+            self.connected = False
+            
+            if isinstance(e, Ice.UnknownUserException) and e.unknown != 'Murmur:InvalidSecretException':
+                raise  # we can't handle this error
+            
+            log.exception("Invalid Ice secret.")
+            return False
+        
+        self.connected = True
+        return True
+    
+    def checkConnection(self):
+        try:
+            self.failedWatch = not self.attachCallbacks()
+        
+        except Ice.Exception as e:
+            log.exception("Failed connection check.")
+        
+        
+        
+        
+        
+        
+
+
+
+
+
+
+def main(secret):
+    """
+    
+    PYTHONPATH=/usr/local/lib/python2.7/site-packages paster shell
+    from brave.mumble.service import main
+    
+    """
     log.info("Ice initializing.")
     
-    ice = Ice.initialize([])
-    meta = Murmur.MetaPrx.checkedCast(ice.stringToProxy('Meta:tcp -h 127.0.0.1 -p 6502'))
+    prop = Ice.createProperties([])
+    prop.setProperty("Ice.ImplicitContext", "Shared")
+    prop.setProperty("Ice.MessageSizeMax", "65535")
+    prop.setProperty("Ice.Default.EncodingVersion", "1.0")
     
-    adapter = ice.CreateObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1")
+    idd = Ice.InitializationData()
+    idd.properties = prop
+    
+    ice = Ice.initialize(idd)
+    
+    log.info("here")
+    
+    if secret:
+        ice.getImplicitContext().put("secret", secret)
+    
+    prx = ice.stringToProxy(connection)
+    
+    try:
+        prx.ice_ping()
+    except Ice.Exception:
+        log.error("Unable to ping Murmur Ice interface.")
+        return
+    
+    log.info("there")
+    
+    # Magic.  Try loading the Ice slice from the Mumble server itself.
+    
+    try:
+        op = IcePy.Operation('getSlice', Ice.OperationMode.Idempotent, Ice.OperationMode.Idempotent, True, (), (), (), IcePy._t_string, ())
+        slice = op.invoke(prx, ((), None))
+    except (TypeError, Ice.OperationNotExistException):
+        log.exception("Unable to dynamically load slice information; Ice version too new?")
+    else:
+        # Swap out the (potentially old) existing slice information.
+        with tempfile.NamedTemporaryFile(suffix='.ice') as tmp:
+            try:
+                tmp.write(slice)
+                tmp.flush()
+                Ice.loadSlice(tmp.name)
+                log.info("Loaded dynamic Murmur.ice slice information.")
+            except RuntimeError:
+                log.exception("Unable to process dynamic slice information.")
+                return
+        
+        global Murmur
+        import Murmur as m
+        Murmur = m
+    
+    meta = Murmur.MetaPrx.checkedCast(prx)
+    
+    log.info("everywhere")
+    
+    adapter = ice.createObjectAdapterWithEndpoints(b"Callback.Client", b"tcp -h 127.0.0.1")
     adapter.activate()
     
+    log.info("Connected to: Mumble %s", meta.getVersion()[:3])
+    
     for server in meta.getBootedServers():
-        authenticator = Murmur.ServerUpdatingAuthenticatorPrx.uncheckedCast(adapter.addWithUUID(ServerAuthenticator(server, adapter)))
+        authenticator = Murmur.ServerUpdatingAuthenticatorPrx.uncheckedCast(adapter.addWithUUID(ServerAuthenticator(server, meta)))
         server.setAuthenticator(authenticator)
     
     log.info("Ice registration complete.")
