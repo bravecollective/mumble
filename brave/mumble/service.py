@@ -17,6 +17,7 @@ import Murmur
 
 
 log = __import__('logging').getLogger(__name__)
+icelog = __import__('logging').getLogger('ice')
 
 
 
@@ -24,7 +25,7 @@ AUTH_FAIL = (-1, None, None)
 NO_INFO = (False, {})
 
 
-class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
+class MumbleAuthenticator(Murmur.ServerAuthenticator):
     """MongoDB-backed Mumble authentication agent.
     
     Murmur ICE reference: http://mumble.sourceforge.net/slice/Murmur.html
@@ -32,14 +33,12 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
     
     # TODO: Factor out all the "registered__exists=True, registered__not=None" clones.
     
-    def __init__(self, server, meta):
-        self.server = server  # TODO: No super()?!
-        self.meta = meta
+    # ServerAuthenticator
     
-    def authenticate(self, name, pw, certlist, certhash, strong, current=None):
+    def authenticate(self, name, pw, certificates, certhash, certstrong, current=None):
         """Authenticate a Mumble user.
         
-        * certlist: the X509 certificate chain of the user's certificate
+        * certificates: the X509 certificate chain of the user's certificate
         
         Returns a 3-tuple of user_id, user_name, groups.
         """
@@ -69,13 +68,13 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
             return AUTH_FAIL
         
         # TODO: Do we have to force user registration here?
-        # self.server.registerUser(info)
+        # if current: current.registerUser(info)
         
         log.debug('success "%s"', name)
         return (user.character.id, name, user.tags + (['member'] if 'member' not in user.tags else []))  # TODO: Fixme when auth provides tags.
     
     def getInfo(self, id, current=None):
-        return false  # for now, let's pass through
+        return False  # for now, let's pass through
         
         log.debug('getInfo %d', id)
         
@@ -92,6 +91,20 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
                 Murmur.UserInfo.UserComment: comment,
             }
     
+    def nameToId(self, name, current=None):
+        return Ticket.objects(character__name=name, registered__exists=True, registered__not=None).scalar('character__id').first() or -2
+    
+    def idToName(self, id, current=None):
+        return Ticket.objects(character__id=id, registered__exists=True, registered__not=None).scalar('character__name').first() or ''
+    
+    def idToTexture(self, id, current=None):
+        log.debug("idToTexture %d", id)
+        return ''  # TODO: Pull the character's image from CCP's image server.  requests.get, CACHE IT
+    
+    # ServerUpdatingAuthenticator
+    
+    """
+    
     def setInfo(self, id, info, current=None):
         return -1  # for now, let's pass through
         
@@ -102,16 +115,6 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
         updated = Ticket.objects(character__id=id).update(set__comment=info[Murmur.UserInfo.UserComment])
         if not updated: return 0
         return 1
-    
-    def nameToId(self, name, current=None):
-        return Ticket.objects(character__name=name, registered__exists=True, registered__not=None).scalar('character__id').first() or -2
-    
-    def idToName(self, id, current=None):
-        return Ticket.objects(character__id=id, registered__exists=True, registered__not=None).scalar('character__name').first() or ''
-    
-    def idToTexture(self, id, current=None):
-        log.debug("idToTexture %d", id)
-        return ''  # TODO: Pull the character's image from CCP's image server.  requests.get, CACHE IT
     
     def setTexture(self, id, texture, current=None):
         return -1  # we currently don't handle these
@@ -132,6 +135,8 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
         results = Ticket.objects(registered__exists=True, registered__not=None).scalar('character__id', 'character__name')
         if filter.strip(): results.filter(character__name__icontains=filter)
         return dict(results)
+    
+    """
 
 
 
@@ -144,12 +149,12 @@ class ServerAuthenticator(Murmur.ServerUpdatingAuthenticator):
 
 def checkSecret(fn):
     def inner(self, *args, **kw):
-        if not self.__secret:
+        if not self.app.__secret:
             return fn(self, *args, **kw)
         
         current = kw.get('current', args[-1])
         
-        if not current or current.ctx.get('secret', None) != self.__secret:
+        if not current or current.ctx.get('secret', None) != self.app.__secret:
             log.error("Server transmitted invalid secret.")
             raise Murmur.InvalidSecretException()
         
@@ -184,8 +189,8 @@ class MumbleMetaCallback(Murmur.MetaCallback):
     @checkSecret
     def started(self, server, current=None):
         """Attach an authenticator to any newly started virtual servers."""
-        log.info("Attaching authenticator to virtual server %d.", server.id())
-        
+        log.debug("Attaching authenticator to virtual server %d running Mumble %s.", server.id(), '.'.join(str(i) for i in self.app.meta.getVersion()[:3]))
+
         try:
             server.setAuthenticator(self.app.auth)
         except (Murmur.InvalidSecretException, Ice.UnknownUserException) as e:
@@ -215,19 +220,24 @@ class MumbleAuthenticatorApp(Ice.Application):
         self.__port = port
         self.__secret = secret
         
+        self.watchdog = None
         self.connected = False
         self.meta = None
         self.metacb = None
         self.auth = None
     
-    def run(self):
+    def run(self, args):
         self.shutdownOnInterrupt()
         
         if not self.initializeIceConnection():
             return 1
         
+        # Trigger the watchdog.
+        # self.failedWatch = True
+        # self.checkConnection()
+        
         self.communicator().waitForShutdown()
-        self.watchdog.cancel()
+        if self.watchdog: self.watchdog.cancel()
         
         if self.interrupted():
             log.warning("Caught interrupt; shutting down.")
@@ -265,7 +275,7 @@ class MumbleAuthenticatorApp(Ice.Application):
             self.meta.addCallback(self.metacb)
             
             for server in self.meta.getBootedServers():
-                log.debug("Attaching to virtual server %d.", server.id())
+                log.debug("Attaching authenticator to virtual server %d running Mumble %s.", server.id(), '.'.join(str(i) for i in self.meta.getVersion()[:3]))
                 server.setAuthenticator(self.auth)
         
         except Ice.ConnectionRefusedException:
@@ -292,14 +302,23 @@ class MumbleAuthenticatorApp(Ice.Application):
         except Ice.Exception as e:
             log.exception("Failed connection check.")
         
-        
-        
-        
-        
-        
+        self.watchdog = Timer(30, self.checkConnection)  # TODO: Make this configurable.
+        self.watchdog.start()
 
 
 
+class CustomLogger(Ice.Logger):
+    def _print(self, message):
+        icelog.info(message)
+    
+    def trace(self, category, message):
+        icelog.debug("trace %s\n%s", category, message)
+    
+    def warning(self, message):
+        icelog.warning(message)
+    
+    def error(self, message):
+        icelog.error(message)
 
 
 
@@ -318,143 +337,10 @@ def main(secret):
     prop.setProperty("Ice.Default.EncodingVersion", "1.0")
     
     idd = Ice.InitializationData()
+    idd.logger = CustomLogger()
     idd.properties = prop
     
-    ice = Ice.initialize(idd)
+    app = MumbleAuthenticatorApp(secret=secret)
+    app.main(['brave-mumble'], initData=idd)
     
-    log.info("here")
-    
-    if secret:
-        ice.getImplicitContext().put("secret", secret)
-    
-    prx = ice.stringToProxy(connection)
-    
-    try:
-        prx.ice_ping()
-    except Ice.Exception:
-        log.error("Unable to ping Murmur Ice interface.")
-        return
-    
-    log.info("there")
-    
-    # Magic.  Try loading the Ice slice from the Mumble server itself.
-    
-    try:
-        op = IcePy.Operation('getSlice', Ice.OperationMode.Idempotent, Ice.OperationMode.Idempotent, True, (), (), (), IcePy._t_string, ())
-        slice = op.invoke(prx, ((), None))
-    except (TypeError, Ice.OperationNotExistException):
-        log.exception("Unable to dynamically load slice information; Ice version too new?")
-    else:
-        # Swap out the (potentially old) existing slice information.
-        with tempfile.NamedTemporaryFile(suffix='.ice') as tmp:
-            try:
-                tmp.write(slice)
-                tmp.flush()
-                Ice.loadSlice(tmp.name)
-                log.info("Loaded dynamic Murmur.ice slice information.")
-            except RuntimeError:
-                log.exception("Unable to process dynamic slice information.")
-                return
-        
-        global Murmur
-        import Murmur as m
-        Murmur = m
-    
-    meta = Murmur.MetaPrx.checkedCast(prx)
-    
-    log.info("everywhere")
-    
-    adapter = ice.createObjectAdapterWithEndpoints(b"Callback.Client", b"tcp -h 127.0.0.1")
-    adapter.activate()
-    
-    log.info("Connected to: Mumble %s", meta.getVersion()[:3])
-    
-    for server in meta.getBootedServers():
-        authenticator = Murmur.ServerUpdatingAuthenticatorPrx.uncheckedCast(adapter.addWithUUID(ServerAuthenticator(server, meta)))
-        server.setAuthenticator(authenticator)
-    
-    log.info("Ice registration complete.")
-    
-    try:
-        ice.waitForShutdown()
-    except KeyboardInterrupt:
-        log.info("Ice shutting down due to caught ^C.")
-    
-    # TODO: Do we have to unregister anything here?
-    # meta.removeCallback(metaR)
-    ice.shutdown()
-    
-    log.info("Ice stopped.")
-
-
-
-
-"""
-
-
-id = server.registerUser(username=username, password=password)
-
-server.kickPlayer(id, reason)
-server.unregisterUser(id)
-
-user = server.getRegistration(id)
-user.password = password
-server.updateRegistration(id, user)
-
-for is, name in server.getRegisteredUsers(""):
-    pass
-
-
-
-
-def clean_idlers(server):
-    users = server.getUsers()
-    
-    for user in users:
-        if user.idlesecs > 5000 and user.channel != 4:
-            state = server.getState(user.session)
-            if state:
-                state.channel = 4
-                server.setState(state)
-
-
-
-if __name__ == "__main__":
-    global contextR
-
-    print "Creating callbacks...",
-    ice = Ice.initialize(sys.argv)
-
-    meta = Murmur.MetaPrx.checkedCast(ice.stringToProxy('Meta:tcp -h 127.0.0.1 -p 6502'))
-
-    adapter = ice.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1")
-    adapter.activate()
-
-    for server in meta.getBootedServers():
-      serverR=Murmur.ServerUpdatingAuthenticatorPrx.uncheckedCast(adapter.addWithUUID(ServerAuthenticatorI(server, adapter)))
-      server.setAuthenticator(serverR)
-
-    print "Done"
-    
-    map = {};
-    map[Murmur.UserInfo.UserName] = 'TestUser';
-
-    for server in meta.getBootedServers():
-      ids= server.getUserIds(["TestUser"])
-      for name,id in ids.iteritems():
-        if (id > 0):
-          print "Will unregister ", id
-          server.unregisterUser(id)
-      server.registerUser(map)
-
-    print 'Script running (press CTRL-C to abort)';
-    try:
-        ice.waitForShutdown()
-    except KeyboardInterrupt:
-        print 'CTRL-C caught, aborting'
-
-    meta.removeCallback(metaR)
-    ice.shutdown()
-    print "Goodbye"
-
-"""
+    log.info("Shutdown complete.")
