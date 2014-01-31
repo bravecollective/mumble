@@ -34,7 +34,7 @@
 <div class="row">
     <div class="col-md-6">
         <%self:panel title="Mumble User Name" cls="user">
-            <input type="text" class="form-control input-lg" disabled value="${web.user.character.name.replace(' ', '_')}" style="color: black; background-color: white; font-family: Courier, 'Courier New', fixed;">
+            <input type="text" class="form-control input-lg mumble-name" disabled value="${web.user.character.name.replace(' ', '_')}" style="color: black; background-color: white; font-family: Courier, 'Courier New', fixed;">
         </%self:panel>
     </div>
     
@@ -43,15 +43,15 @@
             <label class="sr-only" for="password">Password</label>
             <div class="input-group">
                 <input type="password" class="form-control input-lg" id="password" placeholder="Enter new password here.">
-                <span class="input-group-addon">
-                    <i class="fa fa-fw fa-2x fa-times-circle-o${' hidden' if web.user.has_password else ''} incomplete text-danger"></i>
-                    <i class="fa fa-fw fa-2x fa-circle-o hidden" data-score="0"></i>
-                    <i class="fa fa-fw fa-2x fa-circle-o text-danger hidden" data-score="1"></i>
-                    <i class="fa fa-fw fa-2x fa-circle-o text-warning hidden" data-score="2"></i>
+                <span class="input-group-addon submitPassword">
+                    <i class="fa fa-fw fa-2x fa-circle-o${' hidden' if web.user.has_password else ''} incomplete text-danger"></i>
+                    <i class="fa fa-fw fa-2x fa-times hidden" data-score="0"></i>
+                    <i class="fa fa-fw fa-2x fa-times text-danger hidden" data-score="1"></i>
+                    <i class="fa fa-fw fa-2x fa-times text-warning hidden" data-score="2"></i>
                     <i class="fa fa-fw fa-2x fa-circle-o text-info hidden" data-score="3"></i>
-                    <i class="fa fa-fw fa-2x fa-circle-o text-success hidden" data-score="4"></i>
+                    <i class="fa fa-fw fa-2x fa-check text-success hidden" data-score="4"></i>
                     <i class="fa fa-fw fa-2x fa-cog fa-spin hidden trying"></i>
-                    <i class="fa fa-fw fa-2x fa-check-circle-o${' hidden' if not web.user.has_password else ''} success text-success"></i>
+                    <i class="fa fa-fw fa-2x fa-check${' hidden' if not web.user.has_password else ''} success text-success"></i>
                 </span>
             </div>
         </%self:panel>
@@ -70,38 +70,9 @@
     <script>
         $(function(){
             $('#password').on('keyup', function(e){
-                if (e.keyCode == 13) {
-                    if ( $('i.fa.incomplete.hidden, i.fa.success.hidden, i.fa[data-score=0].hidden').length != 3 ) {
-                        $('.passwd .input-group-addon i.fa').animate({
-                                opacity: .33
-                            }, 125, function() {
-                                $('.passwd .input-group-addon i.fa').animate({
-                                        opacity: 1
-                                    }, 125);
-                            });
-                        return;
-                    }
-                    
-                    $('i.fa[data-score]').addClass('hidden');
-                    $('i.fa.trying').removeClass('hidden');
-                    
-                    var password = $('#password').blur().prop('disabled', true).val();
-                    
-                    $.post('/passwd', {password: password}, function(result) {
-                            if ( result.success ) {
-                                // Successful
-                                
-                                $('i.fa.trying, i.fa.success').toggleClass('hidden');
-                                $('#password').val('').attr('placeholder', "Password updated.").prop('disabled', false).focus();
-                                
-                                return;
-                            }
-                            
-                            $('i.fa.trying, i.fa.incomplete').toggleClass('hidden');
-                            $('#password').val('').attr('placeholder', result.message).prop('disabled', false).focus();
-                        });
-                    
-                    return;
+                if(checkForEnter(e))
+                {
+                    submitPasswordForm();
                 }
                 
                 // TODO: Exclude the character's name.
@@ -109,6 +80,55 @@
                 
                 $('i.fa.incomplete, i.fa.success, i.fa[data-score]').addClass('hidden');
                 $('i.fa[data-score=' + analysis.score + ']').removeClass('hidden');
+            });
+
+            $('.submitPassword').on('click', submitPasswordForm);
+
+            function checkForEnter(e)
+            {
+                if (typeof obj.foo != 'undefined' && e.keyCode == 13) {
+
+                    return true;
+                }
+            }
+
+            function submitPasswordForm()
+            {
+                if ( $('i.fa.incomplete.hidden, i.fa.success.hidden, i.fa[data-score=0].hidden').length != 3 ) {
+                    $('.passwd .input-group-addon i.fa').animate({
+                        opacity: .33
+                    }, 125, function() {
+                        $('.passwd .input-group-addon i.fa').animate({
+                            opacity: 1
+                        }, 125);
+                    });
+                    return;
+                }
+
+                $('i.fa[data-score]').addClass('hidden');
+                $('i.fa.trying').removeClass('hidden');
+
+                var password = $('#password').blur().prop('disabled', true).val();
+
+                $.post('/passwd', {password: password}, function(result) {
+                    if ( result.success ) {
+
+                        // Successful
+                        $('i.fa.trying, i.fa.success').toggleClass('hidden');
+                        $('#password').val('').attr('placeholder', "Password updated.").prop('disabled', false).focus();
+
+                        return;
+                    }
+
+                    $('i.fa.trying, i.fa.incomplete').toggleClass('hidden');
+                    $('#password').val('').attr('placeholder', result.message).prop('disabled', false).focus();
+                });
+
+            }
+
+            $('.mumble-name').on('focus click doubleclick', function()
+            {
+                $(this).select();
             });
         });
     </script>
