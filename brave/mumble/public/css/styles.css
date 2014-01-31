@@ -1,180 +1,180 @@
 h5 {
-	text-align: center;
+    text-align: center;
 }
 
 .page-header {
-	margin-bottom: 10px;
+    margin-bottom: 10px;
 }
 
 #wrap > .container {
-	padding-top: 50px;
+    padding-top: 50px;
 }
 
 .jumbotron .actions {
-	margin: 35px 0 0;
-	text-align: center;
+    margin: 35px 0 0;
+    text-align: center;
 }
 
 .jumbotron .actions em {
-	margin: 0 15px;
+    margin: 0 15px;
 }
 
 #wrap > .container > ul.nav-pills.pull-right {
-	margin: 0;
+    margin: 0;
 }
 
 #wrap > .container > h4 {
-	padding-left: 16px;
-	padding-top: 15px;
+    padding-left: 16px;
+    padding-top: 15px;
 }
 
 ul.nav-pills i.fa {
-	margin-right: 5px;
+    margin-right: 5px;
 }
 
 .navbar.navbar-inverse.navbar-fixed-top {
-	box-shadow: 1px 0px 5px rgba(0, 0, 0, 0.35);
+    box-shadow: 1px 0px 5px rgba(0, 0, 0, 0.35);
 }
 
 .navbar.navbar-inverse.navbar-fixed-top .navbar-brand {
-	text-transform: uppercase;
+    text-transform: uppercase;
 }
 
 .navbar-brand small {
-	font-weight: 200;
+    font-weight: 200;
 }
 
 .thumb-64 img {
-	width: 64px;
-	height: 64px;
+    width: 64px;
+    height: 64px;
 }
 
 .thumb-44 {
-	width: 44px;
-	height: 44px;
-	border-radius: 5px;
+    width: 44px;
+    height: 44px;
+    border-radius: 5px;
 }
 
 .thumb-50 {
-	width: 50px;
-	height: 50px;
+    width: 50px;
+    height: 50px;
 }
 
 .thumb-64 .media-body {
-	padding-top: 12px;
+    padding-top: 12px;
 }
 
 #discuss {
-	display: none;
+    display: none;
 }
 
 #discuss .panel > .navbar {
-	margin: 0;
-	border-top-left-radius: 4px;
-	border-top-right-radius: 4px;
+    margin: 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
 }
 
 #discuss .tab-content, #comment .tab-content {
-	padding: 0;
+    padding: 0;
 }
 
 #discuss form, #comment form {
-	padding: 0;
+    padding: 0;
 }
 
 #discuss #spinner, #comment #spinner {
-	display: none;
-	text-align: center;
-	padding: 25px;
+    display: none;
+    text-align: center;
+    padding: 25px;
 }
 
 #comment textarea {
-	border-width: 0;
-	padding: 15px;
-	font-size: 14px;
-	line-height: 1.4em;
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
+    border-width: 0;
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.4em;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 #discuss .tab-pane .content, #comment .tab-pane .content {
-	display: none;
-	padding: 15px;
-	font-size: 14px;
-	line-height: 1.4em;
+    display: none;
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.4em;
 }
 
 #thread-title {
-	border-width: 0;
-	padding: 25px 15px;
-	font-size: 16px;
-	line-height: 1.4em;
-	border-radius: 0;
+    border-width: 0;
+    padding: 25px 15px;
+    font-size: 16px;
+    line-height: 1.4em;
+    border-radius: 0;
 }
 
 #comment-message {
-	border-width: 0;
-	padding: 15px;
-	font-size: 14px;
-	line-height: 1.4em;
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
+    border-width: 0;
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.4em;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 #comment-submit {
-	margin-right: 8px;
+    margin-right: 8px;
 }
 
 .thread {
-	margin-top: 0;
+    margin-top: 0;
 }
 
 .comment {
-	position: relative;
+    position: relative;
 }
 
 .comment > .media {
-	z-index: 2;
+    z-index: 2;
 }
 
 .comment > .media-body {
-	padding-top: 5px;
+    padding-top: 5px;
 }
 
 .comment > .liner {
-	position: absolute;
-	left: 250px;
-	top: 0px;
-	bottom: 0px;
-	width: 4px;
-	background-color: #f0f0f0;
-	z-index: 1;
+    position: absolute;
+    left: 250px;
+    top: 0px;
+    bottom: 0px;
+    width: 4px;
+    background-color: #f0f0f0;
+    z-index: 1;
 }
 
 /* START - Media Queries for .liner classes */
 
 @media (min-width: 0px) and (max-width: 767px) {
-	.comment > .liner {
-		display: none
-	}
+    .comment > .liner {
+        display: none
+    }
 }
 
 @media (min-width: 768px) {
-	.comment > .liner {
-		left: 147px;
-	}
+    .comment > .liner {
+        left: 147px;
+    }
 }
 
 @media (min-width: 992px) {
-	.comment > .liner {
-		left: 201px;
-	}
+    .comment > .liner {
+        left: 201px;
+    }
 }
 
 @media (min-width: 1200px) {
-	.comment > .liner {
-		left: 251px;
-	}
+    .comment > .liner {
+        left: 251px;
+    }
 }
 
 /* END - Media Queries for .liner classes */
@@ -182,132 +182,132 @@ ul.nav-pills i.fa {
 /* START - Media Queries for Hiding Icon Fonts in the comment pane at small screen sizes */
 
 @media (min-width: 768px) {
-	#comment .panel i.fa {
-		display: none;
-	}
+    #comment .panel i.fa {
+        display: none;
+    }
 }
 
 @media (min-width: 992px) {
-	#comment .panel i.fa {
-		display: inline;
-	}
+    #comment .panel i.fa {
+        display: inline;
+    }
 }
 
 /* END - Media Queries for Hiding Icon Fonts in the comment pane at small screen sizes */
 
 .thread-actions {
-	padding-bottom: 6px;
+    padding-bottom: 6px;
 }
 
 div[id^="comment-"] {
 }
 
 #comment .author {
-	padding-top: 12px;
+    padding-top: 12px;
 }
 
 #comment .navbar {
-	margin: 0;
-	border-top-left-radius: 4px;
-	border-top-right-radius: 4px;
+    margin: 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
 }
 
 .previewAlert {
-	margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 #style-panel {
-	padding: 0;
+    padding: 0;
 }
 
 #style-panel .content {
-	padding: 0;
-	display: block !important;
+    padding: 0;
+    display: block !important;
 }
 
 .connection-state .live i {
-	top: -1px;
-	position: relative;
+    top: -1px;
+    position: relative;
 }
 
 .comment .actions, .actions.right {
-	padding: 0;
+    padding: 0;
 }
 
 .actions.left {
-	text-align: right;
+    text-align: right;
 }
 
 .actions.left .nav-pills {
-	display: inline-block;
-	text-align: right;
+    display: inline-block;
+    text-align: right;
 }
 
 .comment .actions .nav-pills {
-	padding-top: 6px;
+    padding-top: 6px;
 }
 
 .comment .actions .nav-pills a, .actions.right .nav-pills a {
-	padding: 10px;
+    padding: 10px;
 }
 
 .comment .actions .nav-pills a i, .actions.right .nav-pills a i {
-	margin-right: 0;
+    margin-right: 0;
 }
 
 .dim {
-	opacity: 0.5;
-	-webkit-transition: opacity .15s ease-in-out;
-	-moz-transition: opacity .15s ease-in-out;
-	-ms-transition: opacity .15s ease-in-out;
-	-o-transition: opacity .15s ease-in-out;
-	transition: opacity .15s ease-in-out;
+    opacity: 0.5;
+    -webkit-transition: opacity .15s ease-in-out;
+    -moz-transition: opacity .15s ease-in-out;
+    -ms-transition: opacity .15s ease-in-out;
+    -o-transition: opacity .15s ease-in-out;
+    transition: opacity .15s ease-in-out;
 }
 
 .dim:hover, .dim:active {
-	opacity: 1;
+    opacity: 1;
 }
 
 .likes {
-	font-size: 12px;
-	padding: 5px;
+    font-size: 12px;
+    padding: 5px;
 }
 
 .like {
-	background-color: white;
-	display: inline-block;
-	border: 1px solid rgb(221, 221, 221);
-	border-radius: 3px;
-	box-shadow: inset rgba(0, 0, 0, 0.0470588) 0px 1px 2px 0px;
-	font-weight: 500;
+    background-color: white;
+    display: inline-block;
+    border: 1px solid rgb(221, 221, 221);
+    border-radius: 3px;
+    box-shadow: inset rgba(0, 0, 0, 0.0470588) 0px 1px 2px 0px;
+    font-weight: 500;
 }
 
 .mumble-name, .submitPassword {
-	cursor: pointer;
+    cursor: pointer;
 }
 
 .mumble-name {
-	display: block;
-	width: 100%;
-	height: 34px;
-	font-size: 14px;
-	line-height: 1.428571429;
-	color: #555;
-	vertical-align: middle;
-	background-color: #fff;
-	background-image: none;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	-webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-	-webkit-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
-	transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
-	height: 46px;
-	padding: 10px 16px;
-	font-size: 18px;
-	line-height: 1.33;
-	border-radius: 6px;
-	color: black;
-	background-color: white;
-	font-family: Courier, 'Courier New', fixed;
+    display: block;
+    width: 100%;
+    height: 34px;
+    font-size: 14px;
+    line-height: 1.428571429;
+    color: #555;
+    vertical-align: middle;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    -webkit-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    height: 46px;
+    padding: 10px 16px;
+    font-size: 18px;
+    line-height: 1.33;
+    border-radius: 6px;
+    color: black;
+    background-color: white;
+    font-family: Courier, 'Courier New', fixed;
 }
