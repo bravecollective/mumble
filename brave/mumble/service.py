@@ -25,88 +25,6 @@ AUTH_FAIL = (-1, None, None)
 NO_INFO = (False, {})
 
 
-
-
-
-
-
-class ServerAuthenticatorI(Murmur.ServerUpdatingAuthenticator):
-    def authenticate(self, name, pw, certlist, certhash, strong, current=None):
-      print certhash, strong
-      for cert in certlist:
-        cert = X509.load_cert_der_string(cert)
-        print cert.get_subject(), "issued by", cert.get_issuer()
-      groups = ("GroupA", "GroupB");
-      if (name == "One"):
-        if (pw == "Magic"):
-          return (1, "One", groups)
-        else:
-          return (-1, None, None)
-      elif (name == "Two"):
-        if (pw == "Mushroom"):
-          return (2, "twO", groups)
-        else:
-          return (-1, None, None)
-      elif (name == "White Space"):
-        if (pw == "Space White"):
-          return (3, "White Space", groups)
-        else:
-          return (-1, None, None)
-      elif (name == "Fail"):
-        time.sleep(6)
-      return (-2, None, None)
-
-    def getInfo(self, id, current=None):
-      print "getInfo ", id
-      name = self.idToName(id);
-      if (name == None):
-        return (False, {})
-      map = {}
-      map[Murmur.UserInfo.UserName]=name
-      return (True, map)
-
-    def nameToId(self, name, current=None):
-      if (name == "One"):
-        return 1
-      elif (name == "Twoer"):
-        return 2
-      else:
-        return -2;
-
-    def idToName(self, id, current=None):
-      if (id == 1):
-        return "One"
-      elif (id == 2):
-        return "Two"
-      else:
-        return None
-
-    def idToTexture(self, id, current=None):
-      print "idToTexture", id
-      return open("../icons/mumble.osx.png").read();
-
-    # The expanded methods from UpdatingAuthenticator. We only implement a subset for this example, but
-    # a valid implementation has to define all of them
-    def registerUser(self, name, current=None):
-      print "Someone tried to register " + name[Murmur.UserInfo.UserName]
-      return -2
-
-    def unregisterUser(self, id, current=None):
-      print "Unregister ", id
-      return -2
-
-    def getRegistration(self, id, current=None):
-      return (-2, None, None)
-    
-    def setInfo(self, id, info, current=None):
-      print "Set", id, info
-      return -1
-
-
-
-
-
-
 class MumbleAuthenticator(Murmur.ServerAuthenticator):
     """MongoDB-backed Mumble authentication agent.
     
@@ -125,16 +43,16 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         Returns a 3-tuple of user_id, user_name, groups.
         """
         
-        log.info('authenticate "%s" %s %r', name, certhash, strong)
+        log.info('authenticate "%s" %s', name, certhash)
         
         # Look up the user.
         try:
-            user = Ticket.objects.get(character__name=name).only('password', 'alliance__id', 'character__id')
-        except Ticket.NotFound:
+            user = Ticket.objects.only('tags', 'password', 'alliance__id', 'character__id').get(character__name=name)
+        except Ticket.DoesNotExist:
             log.warn('notfound "%s"', name)
             return AUTH_FAIL
         
-        if not user.password.check(user.password, pw):
+        if not Ticket.password.check(user.password, pw):
             log.warn('fail "%s"', name)
             return AUTH_FAIL
         
@@ -152,7 +70,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         # TODO: Do we have to force user registration here?
         # if current: current.registerUser(info)
         
-        log.debug('success "%s"', name)
+        log.debug('success "%s" %s', name, ' '.join(user.tags + (['member'] if 'member' not in user.tags else [])))
         return (user.character.id, name, user.tags + (['member'] if 'member' not in user.tags else []))  # TODO: Fixme when auth provides tags.
     
     def getInfo(self, id, current=None):
@@ -161,7 +79,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         log.debug('getInfo %d', id)
         
         try:
-            seen, name, comment = Ticket.objects(character__id=id, registered__exists=True, registered__not=None).scalar('seen', 'character__name', 'comment').first()
+            seen, name, comment = Ticket.objects(character__id=id).scalar('seen', 'character__name', 'comment').first()
         except TypeError:
             return NO_INFO
         
@@ -174,10 +92,10 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             }
     
     def nameToId(self, name, current=None):
-        return Ticket.objects(character__name=name, registered__exists=True, registered__not=None).scalar('character__id').first() or -2
+        return Ticket.objects(character__name=name).scalar('character__id').first() or -2
     
     def idToName(self, id, current=None):
-        return Ticket.objects(character__id=id, registered__exists=True, registered__not=None).scalar('character__name').first() or ''
+        return Ticket.objects(character__id=id).scalar('character__name').first() or ''
     
     def idToTexture(self, id, current=None):
         log.debug("idToTexture %d", id)
@@ -214,7 +132,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
     #     return (-2, None, None)
     
     def getRegisteredUsers(self, filter, current=None):
-        results = Ticket.objects(registered__exists=True, registered__not=None).scalar('character__id', 'character__name')
+        results = Ticket.objects.scalar('character__id', 'character__name')
         if filter.strip(): results.filter(character__name__icontains=filter)
         return dict(results)
     
@@ -315,8 +233,8 @@ class MumbleAuthenticatorApp(Ice.Application):
             return 1
         
         # Trigger the watchdog.
-        # self.failedWatch = True
-        # self.checkConnection()
+        self.failedWatch = True
+        self.checkConnection()
         
         self.communicator().waitForShutdown()
         if self.watchdog: self.watchdog.cancel()
@@ -345,7 +263,7 @@ class MumbleAuthenticatorApp(Ice.Application):
         metacbprx = adapter.addWithUUID(MumbleMetaCallback(self))
         self.metacb = Murmur.MetaCallbackPrx.uncheckedCast(metacbprx)
         
-        authprx = adapter.addWithUUID(ServerAuthenticatorI())
+        authprx = adapter.addWithUUID(MumbleAuthenticator())
         self.auth = Murmur.ServerUpdatingAuthenticatorPrx.uncheckedCast(authprx)
         
         return self.attachCallbacks()
