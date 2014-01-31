@@ -34,7 +34,7 @@
 <div class="row">
     <div class="col-md-6">
         <%self:panel title="Mumble User Name" cls="user">
-            <input type="text" class="form-control input-lg mumble-name" disabled value="${web.user.character.name.replace(' ', '_')}" style="color: black; background-color: white; font-family: Courier, 'Courier New', fixed;">
+            <div class="mumble-name">${web.user.character.name.replace(' ', '_')}</div>
         </%self:panel>
     </div>
     
@@ -128,7 +128,7 @@
 
             $('.mumble-name').on('focus click doubleclick', function()
             {
-                $(this).select();
+                $(this).selectText();
             });
         });
     </script>
