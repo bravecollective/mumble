@@ -68,6 +68,10 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         
         tags = [i.replace('mumble.', '') for i in user.tags]
         
+        tags.append('corporation-{0}'.format(user.corporation.id)
+        if user.alliance and user.alliance.id:
+            tags.append('alliance-{0}'.format(user.alliance.id)
+        
         log.debug('success "%s" %s', name, ' '.join(tags))
         return (user.character.id, name, tags)
     
