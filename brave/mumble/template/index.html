@@ -34,7 +34,7 @@
 <div class="row">
     <div class="col-md-6">
         <%self:panel title="Mumble User Name" cls="user">
-            <input type="text" class="form-control input-lg mumble-name" disabled value="${web.user.character.name.replace(' ', '_')}" style="color: black; background-color: white; font-family: Courier, 'Courier New', fixed;">
+            <div class="mumble-name">${web.user.character.name}</div>
         </%self:panel>
     </div>
     
@@ -86,8 +86,7 @@
 
             function checkForEnter(e)
             {
-                if (typeof obj.foo != 'undefined' && e.keyCode == 13) {
-
+                if (e.keyCode == 13) {
                     return true;
                 }
             }
@@ -128,7 +127,7 @@
 
             $('.mumble-name').on('focus click doubleclick', function()
             {
-                $(this).select();
+                $(this).selectText();
             });
         });
     </script>
