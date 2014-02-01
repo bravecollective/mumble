@@ -66,8 +66,10 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         else:
             return AUTH_FAIL
         
-        log.debug('success "%s" %s', name, ' '.join(user.tags))
-        return (user.character.id, name, user.tags)
+        tags = [i.replace('mumble.', '') for i in user.tags]
+        
+        log.debug('success "%s" %s', name, ' '.join(tags))
+        return (user.character.id, name, tags)
     
     def getInfo(self, id, current=None):
         return False  # for now, let's pass through
