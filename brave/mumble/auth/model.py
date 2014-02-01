@@ -82,6 +82,7 @@ class Ticket(Document):
     tags = ListField(StringField(), db_field='g', default=list)
     
     password = PasswordField(db_field='pw', difficulty=0.25)
+    comment = StringField(db_field='m', default='')
     
     expires = DateTimeField(db_field='e')
     seen = DateTimeField(db_field='s')  # TODO: Update this when the user connects/disconnects.
@@ -114,8 +115,7 @@ class Ticket(Document):
                 user.alliance.id = result.alliance.id
                 user.alliance.name = result.alliance.name
             
-            user.tags = result.tags if 'tags' in result else []
-            
+            user.tags = [i.replace('mumble.', '') for i in (result.tags if 'tags' in result else [])]
             user.save()
         
         else:

@@ -61,17 +61,13 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         # Define the registration date if one has not been set.
         Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
         
-        # Check for BRAVE membership.
-        # TODO: Don't hard-code this, check for the 'mumble' or 'member' tags.
-        if not user.alliance.id or user.alliance.id != 99003214:
-            log.warn('thirdparty "%s"', name)
+        for tag in ('member', 'blue', 'guest', 'mumble'):
+            if tag in user.tags: break
+        else:
             return AUTH_FAIL
         
-        # TODO: Do we have to force user registration here?
-        # if current: current.registerUser(info)
-        
-        log.debug('success "%s" %s', name, ' '.join(user.tags + (['member'] if 'member' not in user.tags else [])))
-        return (user.character.id, name, user.tags + (['member'] if 'member' not in user.tags else []))  # TODO: Fixme when auth provides tags.
+        log.debug('success "%s" %s', name, ' '.join(user.tags))
+        return (user.character.id, name, user.tags)
     
     def getInfo(self, id, current=None):
         return False  # for now, let's pass through
