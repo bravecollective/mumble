@@ -106,25 +106,18 @@ class Ticket(Document):
         
         if not user:
             user = cls(token=identifier, expires=result.expires, seen=datetime.utcnow())
-            user.character.id = result.character.id
-            user.character.name = result.character.name
-            user.corporation.id = result.corporation.id
-            user.corporation.name = result.corporation.name
-            
-            if result.alliance:
-                user.alliance.id = result.alliance.id
-                user.alliance.name = result.alliance.name
-            
-            user.tags = [i.replace('mumble.', '') for i in (result.tags if 'tags' in result else [])]
-            user.save()
         
-        else:
-            # TODO: Also update membership information.
-            user.update(
-                    set__token = identifier,
-                    set__seen = datetime.utcnow(),
-                    set__tags = result.get('tags', [])
-                )
+        user.character.id = result.character.id
+        user.character.name = result.character.name
+        user.corporation.id = result.corporation.id
+        user.corporation.name = result.corporation.name
+        
+        if result.alliance:
+            user.alliance.id = result.alliance.id
+            user.alliance.name = result.alliance.name
+        
+        user.tags = [i.replace('mumble.', '') for i in (result.tags if 'tags' in result else [])]
+        user.save()
         
         return user.id, user
     
