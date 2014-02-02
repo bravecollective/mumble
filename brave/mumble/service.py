@@ -25,6 +25,18 @@ AUTH_FAIL = (-1, None, None)
 NO_INFO = (False, {})
 
 
+
+def clean_idlers(server):
+    users = server.getUsers()
+    
+    for user in users:
+        if user.idlesecs > 1800 and user.channel != 64:
+            state = server.getState(user.session)
+            if state:
+                state.channel = 64
+                server.setState(state)
+
+
 class MumbleAuthenticator(Murmur.ServerAuthenticator):
     """MongoDB-backed Mumble authentication agent.
     
@@ -279,6 +291,8 @@ class MumbleAuthenticatorApp(Ice.Application):
             for server in self.meta.getBootedServers():
                 log.debug("Attaching authenticator to virtual server %d running Mumble %s.", server.id(), '.'.join(str(i) for i in self.meta.getVersion()[:3]))
                 server.setAuthenticator(self.auth)
+                
+                clean_idlers(server)
         
         except Ice.ConnectionRefusedException:
             log.error("Server refused connection.")
