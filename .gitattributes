@@ -1,1 +1,2 @@
 conf/* filter=git-crypt diff=git-crypt
+conf/ssl/* filter=git-crypt diff=git-crypt
