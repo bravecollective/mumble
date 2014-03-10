@@ -47,7 +47,7 @@ class PasswordField(BinaryField):
         try:
             # It may be a tiny bit more difficult for us to validate than it was to generate.
             # Even a few ms too long will give us bad results.
-            validate_scrypt(source, value, self.difficulty * 2)
+            validate_scrypt(source, value, self.difficulty * 4)
         
         except scrypt_error:
             return False
@@ -81,7 +81,7 @@ class Ticket(Document):
     alliance = EmbeddedDocumentField(Entity, db_field='a', default=lambda: Entity())
     tags = ListField(StringField(), db_field='g', default=list)
     
-    password = PasswordField(db_field='pw', difficulty=0.25)
+    password = PasswordField(db_field='pw', difficulty=0.125)
     comment = StringField(db_field='m', default='')
     
     expires = DateTimeField(db_field='e')
