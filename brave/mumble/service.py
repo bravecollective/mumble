@@ -181,8 +181,8 @@ def errorRecovery(value=None, exceptions=(Ice.Exception, )):
     def decorator(fn):
         def inner(*args, **kw):
             try:
-                return func(self, *args, **kw)
-            except exceptions, e:
+                return fn(*args, **kw)
+            except exceptions:
                 raise
             except:
                 log.exception("Unhandled error.")
