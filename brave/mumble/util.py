@@ -26,6 +26,7 @@ class StartupMixIn(object):
         
         # Load our keys into a usable form.
         try:
+            config['api.identity']
             config['api.private'] = SigningKey.from_string(unhexlify(config['api.private']), curve=NIST256p, hashfunc=sha256)
             config['api.public'] = VerifyingKey.from_string(unhexlify(config['api.public']), curve=NIST256p, hashfunc=sha256)
         except:
