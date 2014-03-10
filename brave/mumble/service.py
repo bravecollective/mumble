@@ -59,7 +59,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         
         # Look up the user.
         try:
-            user = Ticket.objects.only('tags', 'password', 'alliance__id', 'character__id').get(character__name=name)
+            user = Ticket.objects.only('tags', 'password', 'alliance__id', 'alliance__ticker', 'character__id').get(character__name=name)
         except Ticket.DoesNotExist:
             log.warn('notfound "%s"', name)
             return AUTH_FAIL
@@ -85,7 +85,9 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             tags.append('alliance-{0}'.format(user.alliance.id))
         
         log.debug('success "%s" %s', name, ' '.join(tags))
-        return (user.character.id, name, tags)
+        
+        ticker = user.alliance.ticker if user.alliance.ticker else '----'
+        return (user.character.id, '[{0}] {1}'.format(ticker, name), tags)
     
     def getInfo(self, id, current=None):
         return False  # for now, let's pass through
@@ -93,23 +95,30 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         log.debug('getInfo %d', id)
         
         try:
-            seen, name, comment = Ticket.objects(character__id=id).scalar('seen', 'character__name', 'comment').first()
+            seen, name, ticker, comment = Ticket.objects(character__id=id).scalar('seen', 'character__name', 'alliance__ticker', 'comment').first()
         except TypeError:
             return NO_INFO
         
         if name is None: return NO_INFO
+        if not ticker: ticker = '----'
         
         return True, {
                 # Murmur.UserInfo.UserLastActive: seen,  # TODO: Verify the format this needs to be in.
-                Murmur.UserInfo.UserName: name,
+                Murmur.UserInfo.UserName: '[{0}] {1}'.format(ticker, name),
                 Murmur.UserInfo.UserComment: comment,
             }
     
     def nameToId(self, name, current=None):
+        ticker, _, name = name.partition('] ')
         return Ticket.objects(character__name=name).scalar('character__id').first() or -2
     
     def idToName(self, id, current=None):
-        return Ticket.objects(character__id=id).scalar('character__name').first() or ''
+        user = Ticket.objects(character__id=id).only('character__name', 'alliance__ticker').first()
+        if not user: return ''
+        
+        ticker = user.alliance.ticker or '----'
+        
+        return '[{0}] {1}'.format(user.character.name, user.alliance.ticker)
     
     def idToTexture(self, id, current=None):
         log.debug("idToTexture %d", id)
