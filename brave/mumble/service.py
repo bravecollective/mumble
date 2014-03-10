@@ -100,7 +100,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         
         # Look up the user.
         try:
-            user = Ticket.objects.only('tags', 'password', 'alliance__id', 'alliance__ticker', 'character__id').get(character__name=name)
+            user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id').get(character__name=name)
         except Ticket.DoesNotExist:
             log.warn('notfound "%s"', name)
             return AUTH_FAIL
