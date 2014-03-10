@@ -63,6 +63,7 @@ class Entity(EmbeddedDocument):
     
     id = IntField(db_field='i')
     name = StringField(db_field='n')
+    ticker = StringField(db_field='t')
 
 
 class Ticket(Document):
@@ -115,6 +116,10 @@ class Ticket(Document):
         if result.alliance:
             user.alliance.id = result.alliance.id
             user.alliance.name = result.alliance.name
+            
+            alliance = api.lookup.alliance(result.alliance.id, only='short')
+            if alliance.success:
+                user.alliance.ticker = alliance.short
         
         user.tags = [i.replace('mumble.', '') for i in (result.tags if 'tags' in result else [])]
         user.save()
