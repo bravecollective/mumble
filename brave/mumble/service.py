@@ -9,6 +9,10 @@ import tempfile
 import Ice
 import IcePy
 from threading import Timer
+from web.core import config
+from marrow.util.convert import number, array
+from marrow.util.bunch import Bunch
+from collections import defaultdict
 
 from brave.mumble.auth.model import Ticket
 
@@ -26,15 +30,52 @@ NO_INFO = (False, {})
 
 
 
-def clean_idlers(server):
-    users = server.getUsers()
+class IdlerGroup(object):
+    __slots__ = ('time', 'target', 'channels')
     
-    for user in users:
-        if user.idlesecs > 1800 and user.channel != 64:
-            state = server.getState(user.session)
-            if state:
-                state.channel = 64
-                server.setState(state)
+    def __init__(self, time, target, channels=None):
+        self.time = number(time)
+        self.target = number(target)
+        self.channels = array(channels) if channels else []
+
+
+class IdlerHandler(object):
+    def __init__(self):
+        self.channel = number(config.get('idle.channel', 64))
+        self.idlers = array(config.get('idle.groups', 'basic'))
+        self.config = Bunch({i: IdlerGroup(
+                time = config.get('idle.' + i + '.time', 3600),  # default: 1 hour
+                target = config.get('idle.' + i + '.channel', self.channel),  # default: 64
+                channels = config.get('idle.' + i + '.channels', ''),  # default: all
+            ) for i in self.idlers})
+        
+        self.map = defaultdict()
+        self.exclude = list(set((i.target for i in self.config.itervalues())))
+        
+        for config in self.config.itervalues():
+            if config.channels:
+                self.map.update({chan: config for chan in config.channels})
+            else:
+                self.map.default_factory = lambda: config
+    
+    def __call__(self, server):
+        users = server.getUsers()
+        exclude = self.exclude
+        map = self.map
+        
+        for user in users:
+            if user.channel in exclude: continue
+            
+            try:
+                config = map[user.channel]
+            except KeyError:
+                continue
+            
+            if user.idlesecs > config.time:
+                state = server.getState(user.session)
+                if state:
+                    state.channel = config.channel
+                    server.setState(state)
 
 
 class MumbleAuthenticator(Murmur.ServerAuthenticator):
@@ -248,6 +289,8 @@ class MumbleAuthenticatorApp(Ice.Application):
         self.meta = None
         self.metacb = None
         self.auth = None
+        
+        self.clean_idlers = IdlerHandler()
     
     def run(self, args):
         self.shutdownOnInterrupt()
@@ -301,7 +344,7 @@ class MumbleAuthenticatorApp(Ice.Application):
                 log.debug("Attaching authenticator to virtual server %d running Mumble %s.", server.id(), '.'.join(str(i) for i in self.meta.getVersion()[:3]))
                 server.setAuthenticator(self.auth)
                 
-                clean_idlers(server)
+                self.clean_idlers(server)
         
         except Ice.ConnectionRefusedException:
             log.error("Server refused connection.")
