@@ -118,7 +118,7 @@ class Ticket(Document):
             user.alliance.name = result.alliance.name
             
             alliance = api.lookup.alliance(result.alliance.id, only='short')
-            if alliance.success:
+            if alliance and alliance.success:
                 user.alliance.ticker = alliance.short
         
         user.tags = [i.replace('mumble.', '') for i in (result.tags if 'tags' in result else [])]
