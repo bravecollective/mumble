@@ -41,6 +41,7 @@ class IdlerGroup(object):
 
 class IdlerHandler(object):
     def __init__(self):
+        from web.core import config
         self.channel = number(config.get('idle.channel', 64))
         self.idlers = array(config.get('idle.groups', 'basic'))
         self.config = Bunch({i: IdlerGroup(
