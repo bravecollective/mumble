@@ -8,6 +8,7 @@ from web.core import Controller
 from brave.mumble.util import StartupMixIn
 from brave.mumble.auth.controller import AuthenticationMixIn
 
+import zxcvbn
 
 log = __import__('logging').getLogger(__name__)
 
@@ -22,6 +23,10 @@ class RootController(Controller, StartupMixIn, AuthenticationMixIn):
     def passwd(self, password):
         u = user._current_obj()
         
+        #If the password has a score of less than 4, don't permit it (this check also done client-side)
+        if(zxcvbn.password_strength(password).get("score") < 4):
+            return 'json:', dict(success=False, message="The password supplied was not strong enough.")
+
         try:
             u.password = password
             u.save()
