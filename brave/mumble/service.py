@@ -106,7 +106,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             log.warn('notfound "%s"', name)
             return AUTH_FAIL
         
-        if not Ticket.password.check(user.password, pw):
+        if not pw or not Ticket.password.check(user.password, pw):
             log.warn('fail "%s"', name)
             return AUTH_FAIL
         
