@@ -8,6 +8,7 @@ from web.core import Controller
 from brave.mumble.util import StartupMixIn
 from brave.mumble.auth.controller import AuthenticationMixIn
 
+import zxcvbn
 
 log = __import__('logging').getLogger(__name__)
 
