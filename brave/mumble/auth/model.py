@@ -48,10 +48,13 @@ class PasswordField(BinaryField):
             # It may be a tiny bit more difficult for us to validate than it was to generate.
             # Even a few ms too long will give us bad results.
             validate_scrypt(source, value, self.difficulty * 4)
+            
         
         except scrypt_error:
             return False
-        
+        except Exception as e:
+            log.warn(e)
+            return False
         return True
 
 
