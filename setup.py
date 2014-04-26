@@ -32,6 +32,7 @@ setup(
                 'marrow.tags',
                 'marrow.templating',
                 'brave.api',
+                'zxcvbn',
                 'WebCore>=1.1.2',
                 'MongoEngine>=0.7.999',
                 'Mako>=0.4.1',
