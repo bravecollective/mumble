@@ -109,7 +109,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         if not isinstance(pw, basestring):
             log.warn('pass-notString-fail "%s"', name)
             return AUTH_FAIL
-        elif not pw == '':
+        elif pw == '':
             log.warn('pass-empty-fail "%s"', name)
             return AUTH_FAIL
         elif not user.password == '':
