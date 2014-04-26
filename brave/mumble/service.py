@@ -112,10 +112,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         elif pw == '':
             log.warn('pass-empty-fail "%s"', name)
             return AUTH_FAIL
-        elif not user.password == '':
-            log.warn('pass-not-set-fail "%s"', name)
-            return AUTH_FAIL
-        elif not user.password:
+        elif user.password == '':
             log.warn('pass-not-set-fail "%s"', name)
             return AUTH_FAIL
         elif not Ticket.password.check(user.password, pw):
