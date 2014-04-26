@@ -106,8 +106,20 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             log.warn('notfound "%s"', name)
             return AUTH_FAIL
         
-        if not pw or not Ticket.password.check(user.password, pw):
-            log.warn('fail "%s"', name)
+        if not isinstance(pw, basestring):
+            log.warn('pass-notString-fail "%s"', name)
+            return AUTH_FAIL
+        elif not pw == '':
+            log.warn('pass-empty-fail "%s"', name)
+            return AUTH_FAIL
+        elif not user.password == '':
+            log.warn('pass-not-set-fail "%s"', name)
+            return AUTH_FAIL
+        elif not user.password:
+            log.warn('pass-not-set-fail "%s"', name)
+            return AUTH_FAIL
+        elif not Ticket.password.check(user.password, pw):
+            log.warn('pass-fail "%s"', name)
             return AUTH_FAIL
         
         # TODO: Refresh the ticket details from Core to ensure it's valid and we have the latest tags.
