@@ -101,7 +101,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         
         # Look up the user.
         try:
-            user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id').get(character__name=name)
+            user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
         except Ticket.DoesNotExist:
             log.warn('notfound "%s"', name)
             return AUTH_FAIL
@@ -110,7 +110,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             log.warn('fail "%s"', name)
             return AUTH_FAIL
         
-        # TODO: Refresh the ticket details from Core to ensure it's valid and we have the latest tags.
+        Ticket.authenticate(user.token)
         
         # Define the registration date if one has not been set.
         Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())

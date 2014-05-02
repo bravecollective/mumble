@@ -103,6 +103,10 @@ class Ticket(Document):
         api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
         result = api.core.info(identifier)
         
+        #Invalid token sent. Probably a better way to handle this.
+        if not result:
+            return None, None
+        
         user = cls.objects(character__id=result.character.id).first()
         
         if not user:
