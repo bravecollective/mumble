@@ -105,7 +105,8 @@ class Ticket(Document):
         
         #Invalid token sent. Probably a better way to handle this.
         if not result:
-            return None, None
+            log.info("Token %s not valid.", identifier)
+            return None
         
         user = cls.objects(character__id=result.character.id).first()
         

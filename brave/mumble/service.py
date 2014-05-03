@@ -110,7 +110,10 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             log.warn('fail "%s"', name)
             return AUTH_FAIL
         
-        Ticket.authenticate(user.token)
+        #If the token is not valid, deny access
+        #TODO: Bypass this when connection to Core is lost
+        if not Ticket.authenticate(user.token):
+            return AUTH_FAIL
         
         # Define the registration date if one has not been set.
         Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
