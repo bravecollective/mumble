@@ -112,6 +112,8 @@ class Ticket(Document):
         
         if not user:
             user = cls(token=identifier, expires=result.expires, seen=datetime.utcnow())
+        elif identifier != user.token:
+            user.token = identifier
         
         user.character.id = result.character.id
         user.character.name = result.character.name
