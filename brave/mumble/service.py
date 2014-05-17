@@ -103,11 +103,11 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         try:
             user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
         except Ticket.DoesNotExist:
-            log.warn('notfound "%s"', name)
+            log.warn('User "%s" not found in the Ticket database.', name)
             return AUTH_FAIL
         
         if not pw or not Ticket.password.check(user.password, pw):
-            log.warn('fail "%s"', name)
+            log.warn('User "%s" attempted to connect with incorrect password.', name)
             return AUTH_FAIL
         
         # If the token is not valid, deny access
@@ -121,6 +121,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         for tag in ('member', 'blue', 'guest', 'mumble'):
             if tag in user.tags: break
         else:
+            log.warn('User "%s" does not have permission to connect to this server.', name)
             return AUTH_FAIL
         
         tags = [i.replace('mumble.', '') for i in user.tags]
