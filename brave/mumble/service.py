@@ -110,8 +110,8 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             log.warn('fail "%s"', name)
             return AUTH_FAIL
         
-        #If the token is not valid, deny access
-        #TODO: Bypass this when connection to Core is lost
+        # If the token is not valid, deny access
+        # TODO: Bypass this when connection to Core is lost
         if not Ticket.authenticate(user.token):
             return AUTH_FAIL
         
