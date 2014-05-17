@@ -66,7 +66,7 @@ Make a copy of @development.ini@ called @local.ini@, update all relevant directi
 
 This will start a development server and present the URL you need to access.  (Generally "http://127.0.0.1:8080":http://127.0.0.1:8080.)  If you wish the server to automatically restart in the event of a change to one of the source files (templates and statically served content are exempt) add the @--reload@ switch.
 
-
+To start the mumble plugin, set up an ICE write secret in /etc/mumble-server.ini, and edit startAuthenticator.sh, replace ICE_SECRET_WRITE with the secret from /etc/mumble-server.ini.
 
 h2(#license). %4.% License
 
