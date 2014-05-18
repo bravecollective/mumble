@@ -79,7 +79,7 @@ class IdlerHandler(object):
                     server.setState(state)
 
 
-class MumbleAuthenticator(Murmur.ServerAuthenticator):
+class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
     """MongoDB-backed Mumble authentication agent.
     
     Murmur ICE reference: http://mumble.sourceforge.net/slice/Murmur.html
