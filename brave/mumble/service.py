@@ -79,7 +79,7 @@ class IdlerHandler(object):
                     server.setState(state)
 
 
-class MumbleAuthenticator(Murmur.ServerAuthenticator):
+class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
     """MongoDB-backed Mumble authentication agent.
     
     Murmur ICE reference: http://mumble.sourceforge.net/slice/Murmur.html
@@ -101,9 +101,9 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         
         # Look up the user.
         try:
-            user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id').get(character__name=name)
+            user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
         except Ticket.DoesNotExist:
-            log.warn('notfound "%s"', name)
+            log.warn('User "%s" not found in the Ticket database.', name)
             return AUTH_FAIL
         
         if not isinstance(pw, basestring):
@@ -119,7 +119,10 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
             log.warn('pass-fail "%s"', name)
             return AUTH_FAIL
         
-        # TODO: Refresh the ticket details from Core to ensure it's valid and we have the latest tags.
+        # If the token is not valid, deny access
+        # TODO: Bypass this when connection to Core is lost
+        if not Ticket.authenticate(user.token):
+            return AUTH_FAIL
         
         # Define the registration date if one has not been set.
         Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
@@ -127,6 +130,7 @@ class MumbleAuthenticator(Murmur.ServerAuthenticator):
         for tag in ('member', 'blue', 'guest', 'mumble'):
             if tag in user.tags: break
         else:
+            log.warn('User "%s" does not have permission to connect to this server.', name)
             return AUTH_FAIL
         
         tags = [i.replace('mumble.', '') for i in user.tags]

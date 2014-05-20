@@ -106,10 +106,17 @@ class Ticket(Document):
         api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
         result = api.core.info(identifier)
         
+        #Invalid token sent. Probably a better way to handle this.
+        if not result:
+            log.info("Token %s not valid, or connection to Core has been lost.", identifier)
+            return None
+        
         user = cls.objects(character__id=result.character.id).first()
         
         if not user:
             user = cls(token=identifier, expires=result.expires, seen=datetime.utcnow())
+        elif identifier != user.token:
+            user.token = identifier
         
         user.character.id = result.character.id
         user.character.name = result.character.name
