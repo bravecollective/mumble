@@ -106,8 +106,17 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
             log.warn('User "%s" not found in the Ticket database.', name)
             return AUTH_FAIL
         
-        if not pw or not Ticket.password.check(user.password, pw):
-            log.warn('User "%s" attempted to connect with incorrect password.', name)
+        if not isinstance(pw, basestring):
+            log.warn('pass-notString-fail "%s"', name)
+            return AUTH_FAIL
+        elif pw == '':
+            log.warn('pass-empty-fail "%s"', name)
+            return AUTH_FAIL
+        elif user.password == '':
+            log.warn('pass-not-set-fail "%s"', name)
+            return AUTH_FAIL
+        elif not Ticket.password.check(user.password, pw):
+            log.warn('pass-fail "%s"', name)
             return AUTH_FAIL
         
         # If the token is not valid, deny access
