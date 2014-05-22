@@ -123,6 +123,9 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         # TODO: Bypass this when connection to Core is lost
         if not Ticket.authenticate(user.token):
             return AUTH_FAIL
+            
+        # Update the local user object against the newly refreshed DB ticket.
+        user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
         
         # Define the registration date if one has not been set.
         Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
