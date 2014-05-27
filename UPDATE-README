@@ -1,0 +1,5 @@
+#This file includes instructions and notices for admins that they should keep in mind when updating mumble.
+#WARNING: Backup your database regularly and before making any changes to it.
+
+be925ea: Add mumble.bypassCore to your config file. True means mumble will fall back to the local database if the
+    connection to Core fails.
