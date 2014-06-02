@@ -15,6 +15,7 @@ from marrow.util.bunch import Bunch
 from collections import defaultdict
 
 from brave.mumble.auth.model import Ticket
+from brave.api.client import API
 
 Ice.loadSlice(b'', [b'-I' + (Ice.getSliceDir() or b'/usr/local/share/Ice-3.5/slice/'), b'Murmur.ice'])
 import Murmur
@@ -119,9 +120,21 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
             log.warn('pass-fail "%s"', name)
             return AUTH_FAIL
         
+        # Check that Core is up.
+        api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
+        try:
+            api.ping()
+            ping = True
+        except Exception:
+            ping = False
+            log.warning('Unable to connect to core!.')
+        
+        configV = config['mumble.bypassCore'] == 'True' or config['mumble.bypassCore'] == 'true'
+        
+        allow = ping or configV
+        
         # If the token is not valid, deny access
-        # TODO: Bypass this when connection to Core is lost
-        if not Ticket.authenticate(user.token):
+        if not allow or (ping and not Ticket.authenticate(user.token)):
             return AUTH_FAIL
             
         # Update the local user object against the newly refreshed DB ticket.
