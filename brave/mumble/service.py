@@ -133,8 +133,12 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         
         allow = ping or configV
         
-        # If the token is not valid, deny access
-        if not allow or (ping and not Ticket.authenticate(user.token)):
+        try:
+            # If the token is not valid, deny access
+            if not allow or (ping and not Ticket.authenticate(user.token)):
+                return AUTH_FAIL
+        except Exception as e:
+            log.warning("Exception occured when attempting to authenticate user {0}.".format(name))
             return AUTH_FAIL
         
         # Define the registration date if one has not been set.
