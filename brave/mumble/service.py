@@ -13,6 +13,7 @@ from web.core import config
 from marrow.util.convert import number, array
 from marrow.util.bunch import Bunch
 from collections import defaultdict
+from datetime import datetime, timedelta
 
 from brave.mumble.auth.model import Ticket
 from brave.api.client import API
@@ -102,7 +103,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         
         # Look up the user.
         try:
-            user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
+            user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
         except Ticket.DoesNotExist:
             log.warn('User "%s" not found in the Ticket database.', name)
             return AUTH_FAIL
@@ -120,32 +121,34 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
             log.warn('pass-fail "%s"', name)
             return AUTH_FAIL
         
-        # Check that Core is up.
-        api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
-        try:
-            api.ping()
-            ping = True
-        except Exception:
-            ping = False
-            log.warning('Unable to connect to core!.')
+        ticketUpdateTimeoutHours = 48
+        if config['mumble.ticketUpdateTimeoutHours']:
+            ticketUpdateTimeoutHours = int(config['mumble.ticketUpdateTimeoutHours']) # exception will happen here if your bad
         
-        configV = config['mumble.bypassCore'] == 'True' or config['mumble.bypassCore'] == 'true'
-        
-        allow = ping or configV
-        
-        try:
-            # If the token is not valid, deny access
-            if not allow or (ping and not Ticket.authenticate(user.token)):
-                return AUTH_FAIL
-        except Exception as e:
-            log.warning("Exception occured when attempting to authenticate user {0}.".format(name))
-            return AUTH_FAIL
+        if user.updated > (datetime.now() - timedelta(hours = ticketUpdateTimeoutHours)):
+            # -------
+            # Check to make sure that the user is still valid and that their token has not expired yet.
+            # -------
             
-        # Update the local user object against the newly refreshed DB ticket.
-        user = Ticket.objects.only('tags', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
-        
-        # Define the registration date if one has not been set.
-        Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
+            # load up the API
+            api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
+            
+            # is mumble set to just use the main ticket DB if core cant be contacted?
+            config_bypass_core = config['mumble.bypassCore'] == 'True' or config['mumble.bypassCore'] == 'true'
+            
+            try:
+                # If the token is not valid, deny access
+                if not config_bypass_core and not Ticket.authenticate(user.token):
+                    return AUTH_FAIL
+            except Exception as e:
+                log.warning("Exception occured when attempting to authenticate user {0}.".format(name))
+                return AUTH_FAIL
+                
+            # Update the local user object against the newly refreshed DB ticket.
+            user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
+            
+            # Define the registration date if one has not been set.
+            Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
         
         for tag in ('member', 'blue', 'guest', 'mumble'):
             if tag in user.tags: break
