@@ -6,3 +6,4 @@
 .coverage
 .key
 local.ini
+conf/
