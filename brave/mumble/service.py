@@ -165,7 +165,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         return (user.character.id, '[{0}] {1}'.format(ticker, name), tags)
     
     def getInfo(self, id, current=None):
-        return False  # for now, let's pass through
+        return False, {}  # for now, let's pass through
         
         log.debug('getInfo %d', id)
         
