@@ -103,7 +103,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         
         # Look up the user.
         try:
-            user = Ticket.objects.only('tags', 'seen', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
+            user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
         except Ticket.DoesNotExist:
             log.warn('User "%s" not found in the Ticket database.', name)
             return AUTH_FAIL
@@ -122,10 +122,10 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
             return AUTH_FAIL
         
         ticketUpdateTimeoutHours = 48
-        if config['mumble.ticketUpdateTimeoutHours']
+        if config['mumble.ticketUpdateTimeoutHours']:
             ticketUpdateTimeoutHours = int(config['mumble.ticketUpdateTimeoutHours']) # exception will happen here if your bad
         
-        if user.updated > (datetime.now() - timedelta(hours = ticketUpdateTimeoutHours))
+        if user.updated > (datetime.now() - timedelta(hours = ticketUpdateTimeoutHours)):
             # -------
             # Check to make sure that the user is still valid and that their token has not expired yet.
             # -------
@@ -133,7 +133,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
             # load up the API
             api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
             
-            # is mumble set to just use the main ticket DB if
+            # is mumble set to just use the main ticket DB if core cant be contacted?
             config_bypass_core = config['mumble.bypassCore'] == 'True' or config['mumble.bypassCore'] == 'true'
             
             try:
@@ -145,7 +145,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
                 return AUTH_FAIL
                 
             # Update the local user object against the newly refreshed DB ticket.
-            user = Ticket.objects.only('tags', 'seen', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
+            user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
             
             # Define the registration date if one has not been set.
             Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
