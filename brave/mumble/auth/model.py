@@ -90,6 +90,7 @@ class Ticket(Document):
     
     expires = DateTimeField(db_field='e')
     seen = DateTimeField(db_field='s')  # TODO: Update this when the user connects/disconnects.
+    updated = DateTimeField(db_field='s')
     registered = DateTimeField(db_field='r')
     
     @property
@@ -132,6 +133,7 @@ class Ticket(Document):
                 user.alliance.ticker = alliance.short
         
         user.tags = [i.replace('mumble.', '') for i in (result.tags if 'tags' in result else [])]
+        user.updated = datetime.now()
         user.save()
         
         return user.id, user
