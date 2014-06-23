@@ -90,7 +90,7 @@ class Ticket(Document):
     
     expires = DateTimeField(db_field='e')
     seen = DateTimeField(db_field='s')  # TODO: Update this when the user connects/disconnects.
-    updated = DateTimeField(db_field='s')
+    updated = DateTimeField(db_field='u')
     registered = DateTimeField(db_field='r')
     
     @property
