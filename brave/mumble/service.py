@@ -13,6 +13,7 @@ from web.core import config
 from marrow.util.convert import number, array
 from marrow.util.bunch import Bunch
 from collections import defaultdict
+from datetime import datetime, timedelta
 
 from brave.mumble.auth.model import Ticket
 from brave.api.client import API
@@ -120,7 +121,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
             log.warn('pass-fail "%s"', name)
             return AUTH_FAIL
         
-        if user.seen > (datetime.now() - timedelta(days = 2))
+        if user.updated > (datetime.now() - timedelta(days = 2))
             # -------
             # Check to make sure that the user is still valid and that their token has not expired yet.
             # -------
