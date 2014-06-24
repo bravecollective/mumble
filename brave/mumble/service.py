@@ -150,7 +150,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
                 user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
             
                 # Define the registration date if one has not been set.
-                Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
+                Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.utcnow())
         
             for tag in ('member', 'blue', 'guest', 'mumble'):
                 if tag in user.tags: break
