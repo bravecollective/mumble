@@ -122,11 +122,12 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
                 log.warn('pass-fail "%s"', name)
                 return AUTH_FAIL
         
-            ticketUpdateTimeoutHours = 48
-            if config['mumble.ticketUpdateTimeoutHours']:
-                ticketUpdateTimeoutHours = int(config['mumble.ticketUpdateTimeoutHours']) # exception will happen here if your bad
-        
-            if user.updated > (datetime.now() - timedelta(hours = ticketUpdateTimeoutHours)):
+            if config.get('mumble.ticketUpdateTimeoutHours', ''):
+                ticketUpdateTimeoutHours = int(config.get('mumble.ticketUpdateTimeoutHours', '')) # exception will happen here if your bad
+ 
+            updateTimeout = datetime.now() + timedelta(hours=ticketUpdateTimeoutHours)
+ 
+            if not user.updated or user.updated.replace(tzinfo=None) > updateTimeout.replace(tzinfo=None):
                 # -------
                 # Check to make sure that the user is still valid and that their token has not expired yet.
                 # -------
