@@ -98,74 +98,79 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         
         Returns a 3-tuple of user_id, user_name, groups.
         """
-        
-        log.info('authenticate "%s" %s', name, certhash)
-        
-        # Look up the user.
         try:
-            user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
-        except Ticket.DoesNotExist:
-            log.warn('User "%s" not found in the Ticket database.', name)
-            return AUTH_FAIL
         
-        if not isinstance(pw, basestring):
-            log.warn('pass-notString-fail "%s"', name)
-            return AUTH_FAIL
-        elif pw == '':
-            log.warn('pass-empty-fail "%s"', name)
-            return AUTH_FAIL
-        elif user.password == '':
-            log.warn('pass-not-set-fail "%s"', name)
-            return AUTH_FAIL
-        elif not Ticket.password.check(user.password, pw):
-            log.warn('pass-fail "%s"', name)
-            return AUTH_FAIL
+            log.info('authenticate "%s" %s', name, certhash)
         
-        ticketUpdateTimeoutHours = 48
-        if config['mumble.ticketUpdateTimeoutHours']:
-            ticketUpdateTimeoutHours = int(config['mumble.ticketUpdateTimeoutHours']) # exception will happen here if your bad
-        
-        if user.updated > (datetime.now() - timedelta(hours = ticketUpdateTimeoutHours)):
-            # -------
-            # Check to make sure that the user is still valid and that their token has not expired yet.
-            # -------
-            
-            # load up the API
-            api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
-            
-            # is mumble set to just use the main ticket DB if core cant be contacted?
-            config_bypass_core = config['mumble.bypassCore'] == 'True' or config['mumble.bypassCore'] == 'true'
-            
+            # Look up the user.
             try:
-                # If the token is not valid, deny access
-                if not config_bypass_core and not Ticket.authenticate(user.token):
-                    return AUTH_FAIL
-            except Exception as e:
-                log.warning("Exception occured when attempting to authenticate user {0}.".format(name))
+                user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
+            except Ticket.DoesNotExist:
+                log.warn('User "%s" not found in the Ticket database.', name)
                 return AUTH_FAIL
-                
-            # Update the local user object against the newly refreshed DB ticket.
-            user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
+        
+            if not isinstance(pw, basestring):
+                log.warn('pass-notString-fail "%s"', name)
+                return AUTH_FAIL
+            elif pw == '':
+                log.warn('pass-empty-fail "%s"', name)
+                return AUTH_FAIL
+            elif user.password == '':
+                log.warn('pass-not-set-fail "%s"', name)
+                return AUTH_FAIL
+            elif not Ticket.password.check(user.password, pw):
+                log.warn('pass-fail "%s"', name)
+                return AUTH_FAIL
+        
+            ticketUpdateTimeoutHours = 48
+            if config['mumble.ticketUpdateTimeoutHours']:
+                ticketUpdateTimeoutHours = int(config['mumble.ticketUpdateTimeoutHours']) # exception will happen here if your bad
+        
+            if user.updated > (datetime.now() - timedelta(hours = ticketUpdateTimeoutHours)):
+                # -------
+                # Check to make sure that the user is still valid and that their token has not expired yet.
+                # -------
             
-            # Define the registration date if one has not been set.
-            Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
+                # load up the API
+                api = API(config['api.endpoint'], config['api.identity'], config['api.private'], config['api.public'])
+            
+                # is mumble set to just use the main ticket DB if core cant be contacted?
+                config_bypass_core = config['mumble.bypassCore'] == 'True' or config['mumble.bypassCore'] == 'true'
+            
+                try:
+                    # If the token is not valid, deny access
+                    if not config_bypass_core and not Ticket.authenticate(user.token):
+                        return AUTH_FAIL
+                except Exception as e:
+                    log.warning("Exception occured when attempting to authenticate user {0}.".format(name))
+                    return AUTH_FAIL
+                
+                # Update the local user object against the newly refreshed DB ticket.
+                user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
+            
+                # Define the registration date if one has not been set.
+                Ticket.objects(character__name=name, registered=None).update(set__registered=datetime.datetime.utcnow())
         
-        for tag in ('member', 'blue', 'guest', 'mumble'):
-            if tag in user.tags: break
-        else:
-            log.warn('User "%s" does not have permission to connect to this server.', name)
+            for tag in ('member', 'blue', 'guest', 'mumble'):
+                if tag in user.tags: break
+            else:
+                log.warn('User "%s" does not have permission to connect to this server.', name)
+                return AUTH_FAIL
+        
+            tags = [i.replace('mumble.', '') for i in user.tags]
+        
+            tags.append('corporation-{0}'.format(user.corporation.id))
+            if user.alliance and user.alliance.id:
+                tags.append('alliance-{0}'.format(user.alliance.id))
+        
+            log.debug('success "%s" %s', name, ' '.join(tags))
+        
+            ticker = user.alliance.ticker if user.alliance.ticker else '----'
+            return (user.character.id, '[{0}] {1}'.format(ticker, name), tags)
+            
+        except Exception as exc:
+            log.critical("Exception occurred in authenticate! {0}".format(exc))
             return AUTH_FAIL
-        
-        tags = [i.replace('mumble.', '') for i in user.tags]
-        
-        tags.append('corporation-{0}'.format(user.corporation.id))
-        if user.alliance and user.alliance.id:
-            tags.append('alliance-{0}'.format(user.alliance.id))
-        
-        log.debug('success "%s" %s', name, ' '.join(tags))
-        
-        ticker = user.alliance.ticker if user.alliance.ticker else '----'
-        return (user.character.id, '[{0}] {1}'.format(ticker, name), tags)
     
     def getInfo(self, id, current=None):
         return False, {}  # for now, let's pass through
