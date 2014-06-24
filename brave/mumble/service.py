@@ -28,6 +28,7 @@ icelog = __import__('logging').getLogger('ice')
 
 
 AUTH_FAIL = (-1, None, None)
+UNKNOWN_USER_FAIL = (-2, None, None)
 NO_INFO = (False, {})
 
 
@@ -101,23 +102,28 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         try:
         
             log.info('authenticate "%s" %s', name, certhash)
+            
+            # if people try to login with SuperUser, immediately fail them
+            if name == 'SuperUser':
+                log.warn('Forced fall through for SuperUser')
+                return UNKNOWN_USER_FAIL
         
             # Look up the user.
             try:
                 user = Ticket.objects.only('tags', 'updated', 'password', 'corporation__id', 'alliance__id', 'alliance__ticker', 'character__id', 'token').get(character__name=name)
             except Ticket.DoesNotExist:
                 log.warn('User "%s" not found in the Ticket database.', name)
-                return AUTH_FAIL
+                return UNKNOWN_USER_FAIL
         
             if not isinstance(pw, basestring):
                 log.warn('pass-notString-fail "%s"', name)
                 return AUTH_FAIL
             elif pw == '':
                 log.warn('pass-empty-fail "%s"', name)
-                return AUTH_FAIL
+                return UNKNOWN_USER_FAIL
             elif user.password == '':
                 log.warn('pass-not-set-fail "%s"', name)
-                return AUTH_FAIL
+                return UNKNOWN_USER_FAIL
             elif not Ticket.password.check(user.password, pw):
                 log.warn('pass-fail "%s"', name)
                 return AUTH_FAIL
