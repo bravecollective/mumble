@@ -103,7 +103,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
         
             log.info('authenticate "%s" %s', name, certhash)
             
-            # if people try to login with SuperUser, immideatly fail them
+            # if people try to login with SuperUser, immediately fail them
             if name == 'SuperUser':
                 log.warn('Forced fall through for SuperUser')
                 return UNKNOWN_USER_FAIL
