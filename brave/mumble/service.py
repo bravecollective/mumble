@@ -67,6 +67,10 @@ class IdlerHandler(object):
         map = self.map
         
         for user in users:
+            if isinstance(user, int):
+                log.debug("Apprently users are integers. That's cool I guess. {0}".format(user))
+                continue
+            
             if user.channel in exclude: continue
             
             try:
