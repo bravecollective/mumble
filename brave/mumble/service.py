@@ -26,7 +26,7 @@ log = __import__('logging').getLogger(__name__)
 icelog = __import__('logging').getLogger('ice')
 
 
-
+# NOTE: AUTH_FAIL is required for users to get prompted to reenter their password.
 AUTH_FAIL = (-1, None, None)
 UNKNOWN_USER_FAIL = (-2, None, None)
 NO_INFO = (False, {})
@@ -120,7 +120,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
                 return AUTH_FAIL
             elif pw == '':
                 log.warn('pass-empty-fail "%s"', name)
-                return UNKNOWN_USER_FAIL
+                return AUTH_FAIL
             elif user.password == '':
                 log.warn('pass-not-set-fail "%s"', name)
                 return UNKNOWN_USER_FAIL
