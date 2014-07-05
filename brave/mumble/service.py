@@ -135,9 +135,9 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
             if config.get('mumble.ticketUpdateTimeoutHours', ''):
                 ticketUpdateTimeoutHours = int(config.get('mumble.ticketUpdateTimeoutHours', '')) # exception will happen here if your bad
  
-            updateTimeout = datetime.now() + timedelta(hours=ticketUpdateTimeoutHours)
+            timeoutHours = timedelta(hours=ticketUpdateTimeoutHours)
  
-            if not user.updated or user.updated.replace(tzinfo=None) > updateTimeout.replace(tzinfo=None):
+            if not user.updated or (datetime.now() - user.updated.replace(tzinfo=None)) > updateTimeout:
                 # -------
                 # Check to make sure that the user is still valid and that their token has not expired yet.
                 # -------
