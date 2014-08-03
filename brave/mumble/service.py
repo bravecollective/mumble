@@ -137,7 +137,7 @@ class MumbleAuthenticator(Murmur.ServerUpdatingAuthenticator):
  
             timeoutHours = timedelta(hours=ticketUpdateTimeoutHours)
  
-            if not user.updated or (datetime.now() - user.updated.replace(tzinfo=None)) > updateTimeout:
+            if not user.updated or (datetime.now() - user.updated.replace(tzinfo=None)) > timeoutHours:
                 # -------
                 # Check to make sure that the user is still valid and that their token has not expired yet.
                 # -------
