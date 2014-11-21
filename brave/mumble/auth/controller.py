@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from web.auth import authenticate, deauthenticate
-from web.core import config, url
+from web.core import config, url, session
 from web.core.http import HTTPFound
 
 from brave.api.client import API
@@ -37,6 +37,10 @@ class AuthenticationMixIn(object):
         # Note that our own 'sessions' may not last beyond the UTC date returned as 'expires'.
         # (Though they can be shorter!)
         
+        # Prevent users from specifying their session IDs (Some user-agents were sending null ids, leading to users
+        # authenticated with a session id of null
+        session.regenerate_id()
+
         # We request an authenticated session from the server.
         
         authenticate(token)

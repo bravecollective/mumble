@@ -124,7 +124,7 @@ class Ticket(Document):
         user.corporation.id = result.corporation.id
         user.corporation.name = result.corporation.name
         
-        ticket = Ticket.objects(alliance__id=(result.alliance.id if result.alliance else o)).first()
+        ticket = Ticket.objects(alliance__id=(result.alliance.id if result.alliance else 0)).first()
 
         if result.alliance and ticket:
             user.alliance = ticket.alliance
